@@ -11,6 +11,7 @@ from bokeh.layouts import column
 from bokeh.plotting import figure, curdoc
 from bokeh.io import output_file, show
 from bokeh.resources import INLINE
+from bokeh.models import Arrow, CDSView, BooleanFilter, NormalHead, OpenHead, VeeHead, Label, Legend, HoverTool, ColumnDataSource
 
 from screeninfo import get_monitors
 
@@ -53,37 +54,88 @@ class YFetcher(Fetcher):
         self.__DATA_ = yf.download(self.__STOCKID, self.__STARTD, self.__ENDD)
         return self.__DATA_
 
-    def Plot(self, indicator: pd.DataFrame):
-        # print (indicator['Idx'])
-        # plot candlestick
-        # fig, axes = mpf.plot(self.__DATA_, type = 'candle', mav = (3,6,9), volume = True, show_nontrading = True, style = 'binance')
+    def BuyIndicator(self, fig: figure, x, y, ArrorColor = "aqua", LineColor = "lightcyan"):
+        return fig.add_layout(Arrow(end=VeeHead(line_color = LineColor, line_width=3, fill_color = ArrorColor),
+                       line_color = LineColor, line_width = 2,
+                       x_start = x, y_start = y + 0.5,
+                       x_end = x, y_end = y + 0.7))
 
+    def SellIndicator(self, fig: figure, x, y, ArrorColor = "deeppink", LineColor = "pink"):
+        return fig.add_layout(Arrow(end=VeeHead(line_color = LineColor, line_width=3, fill_color = ArrorColor),
+                       line_color = LineColor, line_width = 2,
+                       x_start = x, y_start = y - 0.5,
+                       x_end = x, y_end = y - 0.7))
+
+    def Plot(self, indicator: pd.DataFrame):
+
+        # plot candlestick        
         __inc = self.__DATA_.Close > self.__DATA_.Open
         __dec = self.__DATA_.Open  > self.__DATA_.Close
-        print (self.__DATA_.loc[indicator['Date']])
         __W = 12*60*60*1000
+
+        df = self.__DATA_
+        
+        df['openinc']  = df.Open[__inc]
+        df['closeinc'] = df.Close[__inc]
+
+        df['opendec']  = df.Open[__dec]
+        df['closedec'] = df.Close[__dec]
+
+        df['date']     = df.index.values
+
+        df['highinc']  = df.High[__inc]
+        df['lowinc']   = df.Low[__inc]
+
+        df['highdec']  = df.High[__dec]
+        df['lowdec']   = df.Low[__dec]
+
+        source = ColumnDataSource(df)
 
         # Candlestick Chart
         candlestick = figure(x_axis_type = "datetime",
                             width = self.__SCREEN_WIDTH, height = self.__SCREEN_HEIGHT,
                             title = self.__STOCKID, 
-                            tools = ['hover, box_select, reset, wheel_zoom, pan, crosshair'],
+                            tools = ['box_select, reset, wheel_zoom, pan, crosshair'],
                             active_scroll = "wheel_zoom")
 
-        candlestick.segment(self.__DATA_.index[__inc], self.__DATA_.High[__inc],
-                            self.__DATA_.index[__inc], self.__DATA_.Low[__inc], color = self.__LONG)
+        candlestick.segment('Date', 'highinc',
+                            'Date', 'lowinc', color = self.__LONG, source = source)
 
-        candlestick.segment(self.__DATA_.index[__dec], self.__DATA_.High[__dec],
-                            self.__DATA_.index[__dec], self.__DATA_.Low[__dec], color = self.__SHORT)
-
-        candlestick.vbar(self.__DATA_.index[__inc], __W, self.__DATA_.Open[__inc], self.__DATA_.Close[__inc],
-                        fill_color = self.__LONG, line_color = self.__LONG)
-
-        candlestick.vbar(self.__DATA_.index[__dec], __W, self.__DATA_.Open[__dec], self.__DATA_.Close[__dec],
-                        fill_color = self.__SHORT, line_color = self.__SHORT)
-
-        # (TODO) Plot indicators
+        candlestick.segment('Date', 'highdec',
+                            'Date', 'lowdec', color = self.__SHORT, source = source)
         
+        candlestick.vbar('date', __W, 'openinc', 'closeinc',
+                        fill_color = self.__LONG, line_color = self.__LONG, legend_label = 'Up', source = source)
+        
+        candlestick.vbar('date', __W, 'opendec', 'closedec',
+                        fill_color = self.__SHORT, line_color = self.__SHORT, legend_label = 'Down', source = source)
+        
+        hover_tool = HoverTool(tooltips = [
+                                    ('date', '@date{%F}'),
+                                    ('High',"@High{0.2f}"),
+                                    ('Low',"@Low{0.2f}"),
+                                    ('Open','@Open{0.2f}'),
+                                    ('Close',"@Close{0.2f}"),
+                                ],
+                                formatters = {
+                                    "@date": 'datetime',
+                                },
+                                mode = 'mouse'
+                            )
+
+        candlestick.add_tools(hover_tool)
+
+
+        # Plot indicators
+        triggeredTradeList = self.__DATA_.loc[indicator['Date']]
+        cnt = 0
+        for idx, row in triggeredTradeList.iterrows():
+            if cnt%2 == 0:
+                self.BuyIndicator(candlestick, idx, row['High'])
+            else:
+                self.SellIndicator(candlestick, idx, row['Low'])
+            cnt += 1
+
         # Volume Chart
         volume = figure(x_axis_type = "datetime",
                         width = self.__SCREEN_WIDTH, height = int(self.__SCREEN_HEIGHT*0.4),
