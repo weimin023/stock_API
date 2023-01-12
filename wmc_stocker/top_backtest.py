@@ -15,7 +15,6 @@ class Backtest:
         self.__strategy = strategy(cash, commission)
     
     def run(self) -> pd.DataFrame:
-        # TODO
         data = self.__data.copy(deep = False)
         strategy = self.__strategy
         

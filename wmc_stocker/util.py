@@ -15,6 +15,8 @@ from bokeh.models import Arrow, CDSView, BooleanFilter, NormalHead, OpenHead, Ve
 
 from screeninfo import get_monitors
 
+from wmc_stocker.math_util import *
+
 class Fetcher:
     def __init__(self):
         pass
@@ -135,6 +137,15 @@ class YFetcher(Fetcher):
             else:
                 self.SellIndicator(candlestick, idx, row['Low'])
             cnt += 1
+
+        # Plot MA
+        self.ma1 = SMA(df.Close, 5)
+        self.ma2 = SMA(df.Close, 20)
+        self.ma3 = SMA(df.Close, 60)
+
+        candlestick.line(df.index.values, self.ma1, legend_label = 'MA5', color = 'gold', line_width = 1)
+        candlestick.line(df.index.values, self.ma2, legend_label = 'MA20', color = 'darkviolet', line_width = 1)
+        candlestick.line(df.index.values, self.ma3, legend_label = 'MA60', color = 'fuchsia', line_width = 1)
 
         # Volume Chart
         volume = figure(x_axis_type = "datetime",

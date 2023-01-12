@@ -18,8 +18,11 @@ class SmaCross(Strategy):
         elif crossover(self.ma2, self.ma1):
             self.sell()
             print(2)
+'''
+class TangledMA(Strategy):
+    def __init__(self, cash, commission):
 
-
+'''
 class LongArrangement(Strategy):
     def __init__(self, cash, commission):
         self.__InitMoney = cash
@@ -46,12 +49,12 @@ class LongArrangement(Strategy):
         plt.grid()
         plt.show()
     '''
+    
     def buy(self, data):
         self.__Profit -= data.Close
         currTrade = pd.Series({'Date':data.name, 'Status':"Buy", 'Close':round(data.Close, 2), 'Profit':np.NAN, 'TotalMoney':0, 'ROI(%)':np.NAN})
         self.__TradingHistory = pd.concat([self.__TradingHistory, currTrade], axis = 1)
-        # self.__TradingHistoryBuyIdx.append(idx)
-        # self.Buy(data)
+
         self.__Hold = 1
 
     def sell(self, data):
@@ -68,8 +71,7 @@ class LongArrangement(Strategy):
 
         currTrade = pd.Series({'Date':data.name, 'Status':"Sell", 'Close':round(data.Close, 2), 'Profit':round(self.__Profit, 2), 'TotalMoney':round(self.__TotalMoney, 2), 'ROI(%)':round(100*self.__ROI, 2)})
         self.__TradingHistory = pd.concat([self.__TradingHistory, currTrade], axis = 1)
-        # self.__TradingHistorySellIdx.append(idx)
-        # self.Sell(data)
+
         self.__Hold = None
         
     def next(self, data):
