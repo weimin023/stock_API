@@ -65,5 +65,4 @@ class LongArrangement(Strategy):
         if len(self._Bars) > 3:
             self._Bars.pop(0)
 
-    def stats(self) -> pd.DataFrame:
-        return self._TradingHistory.T
+    

@@ -13,6 +13,9 @@ class Strategy():
         self._Hold = None
         self._Profit = 0
         self._TradingHistory = pd.DataFrame()
+    
+    def stats(self) -> pd.DataFrame:
+        return self._TradingHistory.T
 
     @abstractmethod
     def next(self, data):
