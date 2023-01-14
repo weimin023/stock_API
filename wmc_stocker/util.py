@@ -1,21 +1,17 @@
 import yfinance as yf
-import seaborn as sns
+# import seaborn as sns
+from screeninfo import get_monitors
 
-import mplfinance as mpf
-# import matplotlib.pyplot as plt
+from wmc_stocker.math_util import *
 
 import pandas as pd
 
-import bokeh
 from bokeh.layouts import column
 from bokeh.plotting import figure, curdoc
 from bokeh.io import output_file, show
 from bokeh.resources import INLINE
 from bokeh.models import Arrow, CDSView, BooleanFilter, NormalHead, OpenHead, VeeHead, Label, Legend, HoverTool, ColumnDataSource
 
-from screeninfo import get_monitors
-
-from wmc_stocker.math_util import *
 
 class Fetcher:
     def __init__(self):
@@ -56,17 +52,28 @@ class YFetcher(Fetcher):
         self.__DATA_ = yf.download(self.__STOCKID, self.__STARTD, self.__ENDD)
         return self.__DATA_
 
+    '''
     def BuyIndicator(self, fig: figure, x, y, ArrorColor = "aqua", LineColor = "lightcyan"):
         return fig.add_layout(Arrow(end=VeeHead(line_color = LineColor, line_width=3, fill_color = ArrorColor),
                        line_color = LineColor, line_width = 2,
                        x_start = x, y_start = y + 0.5,
                        x_end = x, y_end = y + 0.7))
-
+    
+    
     def SellIndicator(self, fig: figure, x, y, ArrorColor = "deeppink", LineColor = "pink"):
         return fig.add_layout(Arrow(end=VeeHead(line_color = LineColor, line_width=3, fill_color = ArrorColor),
                        line_color = LineColor, line_width = 2,
                        x_start = x, y_start = y - 0.5,
                        x_end = x, y_end = y - 0.7))
+    '''
+
+    def BuyIndicator(self, fig: figure, x, y, size = 20, marker = "triangle"):
+        return fig.scatter(x, y+0.5, size = size, marker = marker, fill_color="aquamarine")
+
+    
+    def SellIndicator(self, fig: figure, x, y, size = 20, marker = "inverted_triangle"):
+        return fig.scatter(x, y-0.5, size = size, marker = marker, fill_color="hotpink")
+
 
     def Plot(self, indicator: pd.DataFrame):
 

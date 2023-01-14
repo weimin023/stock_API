@@ -24,16 +24,8 @@ class TangledMA(Strategy):
 
 '''
 class LongArrangement(Strategy):
-    def __init__(self, cash, commission):
-        self.__InitMoney = cash
-        self.__TotalMoney = cash
-        self.__Commission = commission
-        self.__ROI = 0
-        self.__LocalROI = 0
-        self.__Bars = []
-        self.__Hold = None
-        self.__Profit = 0
-        self.__TradingHistory = pd.DataFrame()
+    #def __init__(self, cash, commission):
+        
         # self.__TradingHistoryBuyIdx = []
         # self.__TradingHistorySellIdx = []
     '''
@@ -50,30 +42,6 @@ class LongArrangement(Strategy):
         plt.show()
     '''
     
-    def buy(self, data):
-        self.__Profit -= data.Close
-        currTrade = pd.Series({'Date':data.name, 'Status':"Buy", 'Close':round(data.Close, 2), 'Profit':np.NAN, 'TotalMoney':0, 'ROI(%)':np.NAN})
-        self.__TradingHistory = pd.concat([self.__TradingHistory, currTrade], axis = 1)
-
-        self.__Hold = 1
-
-    def sell(self, data):
-        # def sell #
-        self.__Profit += data.Close
-
-        ### local ROI
-        last_close = self.__TradingHistory.iloc[:,-1:].T['Close'].values[0]
-        self.__LocalROI = (data.Close - last_close)/last_close
-        
-        ### TotalMoney
-        self.__TotalMoney = self.__TotalMoney*(1 + self.__LocalROI)
-        self.__ROI = (self.__TotalMoney - self.__InitMoney)/self.__InitMoney
-
-        currTrade = pd.Series({'Date':data.name, 'Status':"Sell", 'Close':round(data.Close, 2), 'Profit':round(self.__Profit, 2), 'TotalMoney':round(self.__TotalMoney, 2), 'ROI(%)':round(100*self.__ROI, 2)})
-        self.__TradingHistory = pd.concat([self.__TradingHistory, currTrade], axis = 1)
-
-        self.__Hold = None
-        
     def next(self, data):
         status = 0
         # long
@@ -84,18 +52,18 @@ class LongArrangement(Strategy):
             status = -1
 
         # trigger to buy
-        if status == +1 and sum(self.__Bars) == -3:
-            if self.__Hold is None:
-                self.buy(data)
+        if status == +1 and sum(self._Bars) == -3:
+            if self._Hold is None:
+                self.Buy(data)
 
         # trigger to sell
-        if status == -1 and sum(self.__Bars) == +3:
-            if self.__Hold:
-                self.sell(data)
+        if status == -1 and sum(self._Bars) == +3:
+            if self._Hold:
+                self.Sell(data)
 
-        self.__Bars.append(status)
-        if len(self.__Bars) > 3:
-            self.__Bars.pop(0)
+        self._Bars.append(status)
+        if len(self._Bars) > 3:
+            self._Bars.pop(0)
 
     def stats(self) -> pd.DataFrame:
-        return self.__TradingHistory.T
+        return self._TradingHistory.T
