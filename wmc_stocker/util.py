@@ -8,10 +8,13 @@ import pandas as pd
 
 from bokeh.layouts import column
 from bokeh.plotting import figure, curdoc
-from bokeh.io import output_file, show
+from bokeh.io import output_file, show, export_png, export_svgs
 from bokeh.resources import INLINE
 from bokeh.models import Arrow, CDSView, BooleanFilter, NormalHead, OpenHead, VeeHead, Label, Legend, HoverTool, ColumnDataSource
 
+import os
+
+DEBUG_MODE = 1
 
 class Fetcher:
     def __init__(self):
@@ -49,7 +52,8 @@ class YFetcher(Fetcher):
                 break
 
     def Fetch(self):
-        self.__DATA_ = yf.download(self.__STOCKID, self.__STARTD, self.__ENDD)
+        self.__DATA_ = yf.download(self.__STOCKID, self.__STARTD, self.__ENDD, progress=False)
+        # print (self.__DATA_.empty)
         return self.__DATA_
 
     '''
@@ -113,11 +117,11 @@ class YFetcher(Fetcher):
         candlestick.segment('Date', 'highdec',
                             'Date', 'lowdec', color = self.__SHORT, source = source)
         
-        candlestick.vbar('date', __W, 'openinc', 'closeinc',
-                        fill_color = self.__LONG, line_color = self.__LONG, legend_label = 'Up', source = source)
+        up   = candlestick.vbar('date', __W, 'openinc', 'closeinc',
+                        fill_color = self.__LONG, line_color = self.__LONG, source = source)
         
-        candlestick.vbar('date', __W, 'opendec', 'closedec',
-                        fill_color = self.__SHORT, line_color = self.__SHORT, legend_label = 'Down', source = source)
+        down = candlestick.vbar('date', __W, 'opendec', 'closedec',
+                        fill_color = self.__SHORT, line_color = self.__SHORT, source = source)
         
         hover_tool = HoverTool(tooltips = [
                                     ('date', '@date{%F}'),
@@ -150,9 +154,20 @@ class YFetcher(Fetcher):
         self.ma2 = SMA(df.Close, 20)
         self.ma3 = SMA(df.Close, 60)
 
-        candlestick.line(df.index.values, self.ma1, legend_label = 'MA5', color = 'gold', line_width = 1)
-        candlestick.line(df.index.values, self.ma2, legend_label = 'MA20', color = 'darkviolet', line_width = 1)
-        candlestick.line(df.index.values, self.ma3, legend_label = 'MA60', color = 'fuchsia', line_width = 1)
+        ma5  = candlestick.line(df.index.values, self.ma1, color = 'gold', line_width = 1)
+        ma20 = candlestick.line(df.index.values, self.ma2, color = 'darkviolet', line_width = 1)
+        ma60 = candlestick.line(df.index.values, self.ma3, color = 'fuchsia', line_width = 1)
+
+        # legend settings
+        legend = Legend(items=[
+            ("Up",   [up]),
+            ("Down", [down]),
+            ("MA5",  [ma5]),
+            ("MA20", [ma20]),
+            ("MA60", [ma60])
+        ], location=(0, -30))
+
+        candlestick.add_layout(legend)
 
         # Volume Chart
         volume = figure(x_axis_type = "datetime",
@@ -169,16 +184,22 @@ class YFetcher(Fetcher):
                     top = self.__DATA_.Volume[__dec]/1e4,
                     fill_color = self.__SHORT, line_color = self.__SHORT, alpha = 0.8)
 
-        volume.xaxis.axis_label = "Date"
-        volume.yaxis.axis_label = "Volume (w)"
-        candlestick.yaxis.axis_label = "Price (USD)"
+        volume.xaxis.axis_label = "日期"
+        volume.yaxis.axis_label = "成交量 (萬)"
+        candlestick.yaxis.axis_label = "市價 (NTD)"
 
-        show(column(candlestick, volume))
+        if not DEBUG_MODE:
+            show(column(candlestick, volume))
 
-        # Save figure to file
-        # output_file("./log_lines.html")
-        
-
+        if DEBUG_MODE:
+            # Save figure to file
+            # output_file("./log.png")
+            fpath  = os.getcwd() + "\debug\\"
+            fname = self.__STOCKID
+            if not os.path.exists(os.path.join(os.getcwd(), 'debug')): 
+                os.mkdir(fpath)
+                print (fpath, " directory is created!" )
+            export_png(candlestick, filename = fpath + fname + ".png")
 
 '''
 stock = YFetcher("0050.TW", "2021-01-01", "2022-10-31")
