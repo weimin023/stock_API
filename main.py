@@ -27,6 +27,14 @@ def func(data: pd.DataFrame)->list:
             DELIST.append(row.Index)
     return DELIST
 
+def func2(data: pd.DataFrame):
+    for row in data.itertuples(index=True):
+        stock = YFetcher(row.symbol, STARTDAY_formated, TODAY_formated)
+
+        bt = Backtest(stock, TangledMA, cash=50000, commission=.002)
+        bt.runMA()
+        print (stock.GetName())
+
 def Save2DB(data: pd.DataFrame):
     # create a database
     con = sqlite3.connect(".\stock_pool\stock_pool.db")
@@ -79,9 +87,38 @@ def DailyReflashPool()->None:
 
     Save2DB(csv_)
 
+def test()->None:
+    con = sqlite3.connect(".\stock_pool\stock_pool.db")
+    cur = con.cursor()
+    # cur.execute("CREATE TABLE history_data(Date, Open, High, Low, Close, Volume)")
+    con.commit()
+
+    us_df = pd.read_sql("SELECT * FROM stock_pool", con)
+    num_processes = mp.cpu_count()-1
+    chunk_size = 50
+    chunks = np.array_split(us_df, chunk_size)
+
+    # create our pool with `num_processes` processes
+    pool = mp.Pool(processes=num_processes)
+
+    start = time.time()
+
+    result = pool.map(func2, chunks)
+    pool.close()
+    pool.join()
+
+    end = time.time()
+
+    print ("total time: ", end-start)
+
 if __name__ == '__main__':
     # DailyReflashPool()
-    NotImplemented
+    stock = YFetcher('3036.TW', STARTDAY_formated, TODAY_formated)
+    bt = Backtest(stock, TangledMA, cash=50000, commission=.002)
+    print (stock.Fetch())
+    print (bt.run())
+    bt.plot()
+    
 
     
 
@@ -102,10 +139,7 @@ if __name__ == '__main__':
     csv_ = csv_.iloc[LIST_]
     csv_.to_csv(fPATH, index=False, encoding="utf_8_sig")'''
 
-    # backtest
-    #bt = Backtest(stock, LongArrangement, cash=50000, commission=.002)
-    #print (bt.run())
-    #bt.plot()
+    
 
 
 

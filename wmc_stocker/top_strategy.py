@@ -2,6 +2,8 @@ from abc import abstractmethod
 import pandas as pd
 import numpy as np
 
+from wmc_stocker.math_util import *
+
 class Strategy():
     def __init__(self, cash, commission):
         self._InitMoney = cash
@@ -17,6 +19,10 @@ class Strategy():
     def stats(self) -> pd.DataFrame:
         return self._TradingHistory.T
 
+    @abstractmethod
+    def GetName(self):
+        return NotImplemented
+        
     @abstractmethod
     def next(self, data):
         return NotImplemented

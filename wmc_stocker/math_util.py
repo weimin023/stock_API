@@ -2,6 +2,8 @@ import pandas as pd
 from numbers import Number
 from typing import Sequence
 
+import unittest
+import pdb
 
 def SMA(arr: pd.Series, win: int) -> pd.Series:
     '''

@@ -14,7 +14,7 @@ from bokeh.models import Arrow, CDSView, BooleanFilter, NormalHead, OpenHead, Ve
 
 import os
 
-DEBUG_MODE = 1
+DEBUG_MODE = 0
 
 class Fetcher:
     def __init__(self):
@@ -56,6 +56,8 @@ class YFetcher(Fetcher):
         # print (self.__DATA_.empty)
         return self.__DATA_
 
+    def GetName(self):
+        return self.__STOCKID
     '''
     def BuyIndicator(self, fig: figure, x, y, ArrorColor = "aqua", LineColor = "lightcyan"):
         return fig.add_layout(Arrow(end=VeeHead(line_color = LineColor, line_width=3, fill_color = ArrorColor),
@@ -148,23 +150,26 @@ class YFetcher(Fetcher):
             else:
                 self.SellIndicator(candlestick, idx, row['Low'])
             cnt += 1
+        '''
+        for idx, row in triggeredTradeList.iterrows():
+            self.BuyIndicator(candlestick, idx, row['High'])'''
 
         # Plot MA
         self.ma1 = SMA(df.Close, 5)
-        self.ma2 = SMA(df.Close, 20)
-        self.ma3 = SMA(df.Close, 60)
+        self.ma2 = SMA(df.Close, 10)
+        self.ma3 = SMA(df.Close, 20)
 
         ma5  = candlestick.line(df.index.values, self.ma1, color = 'gold', line_width = 1)
-        ma20 = candlestick.line(df.index.values, self.ma2, color = 'darkviolet', line_width = 1)
-        ma60 = candlestick.line(df.index.values, self.ma3, color = 'fuchsia', line_width = 1)
+        ma10 = candlestick.line(df.index.values, self.ma2, color = 'darkviolet', line_width = 1)
+        ma20 = candlestick.line(df.index.values, self.ma3, color = 'fuchsia', line_width = 1)
 
         # legend settings
         legend = Legend(items=[
             ("Up",   [up]),
             ("Down", [down]),
             ("MA5",  [ma5]),
-            ("MA20", [ma20]),
-            ("MA60", [ma60])
+            ("MA10", [ma10]),
+            ("MA20", [ma20])
         ], location=(0, -30))
 
         candlestick.add_layout(legend)
