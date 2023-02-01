@@ -14,7 +14,7 @@ from bokeh.models import Arrow, CDSView, BooleanFilter, NormalHead, OpenHead, Ve
 
 import os
 
-DEBUG_MODE = 0
+DEBUG_MODE = 1
 
 class Fetcher:
     def __init__(self):
@@ -26,30 +26,10 @@ class Fetcher:
 class YFetcher(Fetcher):
     # constructor
     # | ex: "SPY AAPL", start="2017-01-01", end="2017-04-30"
-    def __init__(self, STOCKID, STARTD, ENDD, DEFAULT_COLOR = 1):
+    def __init__(self, STOCKID, STARTD, ENDD):
         self.__STOCKID = STOCKID
         self.__STARTD  = STARTD
         self.__ENDD    = ENDD
-        self.__DEFAULT_COLOR = DEFAULT_COLOR
-
-        ### ENV SETTING
-        # COLOR
-        if self.__DEFAULT_COLOR:
-            self.__LONG  = "#7FFF00"
-            self.__SHORT = "#FF0000"
-        else:
-            self.__LONG  = "#FF0000"
-            self.__SHORT = "#7FFF00"
-
-        # THEME
-        curdoc().theme = 'dark_minimal'
-
-        # DISPLAY INFO
-        for m in get_monitors():
-            if m.is_primary:
-                self.__SCREEN_WIDTH  = int(m.width*0.9)
-                self.__SCREEN_HEIGHT = int(m.height*0.6)
-                break
 
     def Fetch(self):
         self.__DATA_ = yf.download(self.__STOCKID, self.__STARTD, self.__ENDD, progress=False)
@@ -73,6 +53,38 @@ class YFetcher(Fetcher):
                        x_end = x, y_end = y - 0.7))
     '''
 
+class Plotter:
+    def __init__(self, data: pd.DataFrame, stockID:str, DEFAULT_COLOR = 1):
+        self.__DEFAULT_COLOR = DEFAULT_COLOR
+        self.__DATA_         = data
+        self.__stockID       = stockID
+
+        ### ENV SETTING
+        # COLOR
+        if self.__DEFAULT_COLOR:
+            self.__LONG  = "#7FFF00"
+            self.__SHORT = "#FF0000"
+        else:
+            self.__LONG  = "#FF0000"
+            self.__SHORT = "#7FFF00"
+
+        # THEME
+        curdoc().theme = 'dark_minimal'
+
+        # DISPLAY INFO
+        for m in get_monitors():
+            if m.is_primary:
+                self.__SCREEN_WIDTH  = int(m.width*0.9)
+                self.__SCREEN_HEIGHT = int(m.height*0.6)
+                break
+        
+        # Candlestick Chart
+        self._candlestick = figure(x_axis_type = "datetime",
+                            width = self.__SCREEN_WIDTH, height = self.__SCREEN_HEIGHT,
+                            title = self.__stockID, 
+                            tools = ['box_select, reset, wheel_zoom, pan, crosshair'],
+                            active_scroll = "wheel_zoom")
+
     def BuyIndicator(self, fig: figure, x, y, size = 20, marker = "triangle"):
         return fig.scatter(x, y+0.5, size = size, marker = marker, fill_color="aquamarine")
 
@@ -80,8 +92,10 @@ class YFetcher(Fetcher):
     def SellIndicator(self, fig: figure, x, y, size = 20, marker = "inverted_triangle"):
         return fig.scatter(x, y-0.5, size = size, marker = marker, fill_color="hotpink")
 
+    def GetFig(self):
+        return self._candlestick
 
-    def Plot(self, indicator: pd.DataFrame):
+    def GetPlot(self):
 
         # plot candlestick        
         __inc = self.__DATA_.Close > self.__DATA_.Open
@@ -107,11 +121,7 @@ class YFetcher(Fetcher):
         source = ColumnDataSource(df)
 
         # Candlestick Chart
-        candlestick = figure(x_axis_type = "datetime",
-                            width = self.__SCREEN_WIDTH, height = self.__SCREEN_HEIGHT,
-                            title = self.__STOCKID, 
-                            tools = ['box_select, reset, wheel_zoom, pan, crosshair'],
-                            active_scroll = "wheel_zoom")
+        candlestick = self._candlestick
 
         candlestick.segment('Date', 'highinc',
                             'Date', 'lowinc', color = self.__LONG, source = source)
@@ -140,20 +150,6 @@ class YFetcher(Fetcher):
 
         candlestick.add_tools(hover_tool)
 
-
-        # Plot indicators
-        triggeredTradeList = self.__DATA_.loc[indicator['Date']]
-        cnt = 0
-        for idx, row in triggeredTradeList.iterrows():
-            if cnt%2 == 0:
-                self.BuyIndicator(candlestick, idx, row['High'])
-            else:
-                self.SellIndicator(candlestick, idx, row['Low'])
-            cnt += 1
-        '''
-        for idx, row in triggeredTradeList.iterrows():
-            self.BuyIndicator(candlestick, idx, row['High'])'''
-
         # Plot MA
         self.ma1 = SMA(df.Close, 5)
         self.ma2 = SMA(df.Close, 10)
@@ -170,7 +166,7 @@ class YFetcher(Fetcher):
             ("MA5",  [ma5]),
             ("MA10", [ma10]),
             ("MA20", [ma20])
-        ], location=(0, -30))
+        ], location=(0, -5))
 
         candlestick.add_layout(legend)
 
@@ -200,14 +196,8 @@ class YFetcher(Fetcher):
             # Save figure to file
             # output_file("./log.png")
             fpath  = os.getcwd() + "\debug\\"
-            fname = self.__STOCKID
+            fname = self.__stockID
             if not os.path.exists(os.path.join(os.getcwd(), 'debug')): 
                 os.mkdir(fpath)
                 print (fpath, " directory is created!" )
             export_png(candlestick, filename = fpath + fname + ".png")
-
-'''
-stock = YFetcher("0050.TW", "2021-01-01", "2022-10-31")
-stock.Fetch()
-stock.Plot()
-'''

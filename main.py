@@ -3,7 +3,6 @@ from wmc_stocker.top_backtest import *
 from wmc_stocker.util import *
 
 import datetime, csv, time
-import pandas as pd
 import multiprocessing as mp
 
 import sqlite3
@@ -29,11 +28,19 @@ def func(data: pd.DataFrame)->list:
 
 def func2(data: pd.DataFrame):
     for row in data.itertuples(index=True):
-        stock = YFetcher(row.symbol, STARTDAY_formated, TODAY_formated)
+        stock = YFetcher(row.symbol, "2022-10-01", "2022-12-01")
 
         bt = Backtest(stock, TangledMA, cash=50000, commission=.002)
         bt.runMA()
         print (stock.GetName())
+
+def func3(data: pd.DataFrame):
+    for row in data.itertuples(index=True):
+        stock = YFetcher(row.symbol, "2022-10-01", "2022-12-01")
+        bt = Backtest(stock, TangledMA, cash=50000, commission=.002)
+        bt.run()
+        bt.plot()
+    
 
 def Save2DB(data: pd.DataFrame):
     # create a database
@@ -103,7 +110,7 @@ def test()->None:
 
     start = time.time()
 
-    result = pool.map(func2, chunks)
+    result = pool.map(func3, chunks)
     pool.close()
     pool.join()
 
@@ -113,11 +120,10 @@ def test()->None:
 
 if __name__ == '__main__':
     # DailyReflashPool()
-    stock = YFetcher('3036.TW', STARTDAY_formated, TODAY_formated)
-    bt = Backtest(stock, TangledMA, cash=50000, commission=.002)
-    print (stock.Fetch())
-    print (bt.run())
-    bt.plot()
+    test()
+    #print (stock.Fetch())
+    #print (bt.run())
+
     
 
     

@@ -5,19 +5,27 @@ import numpy as np
 from wmc_stocker.math_util import *
 
 class Strategy():
-    def __init__(self, cash, commission):
-        self._InitMoney = cash
+    def __init__(self, data: pd.DataFrame, cash, commission):
+        self._ma5  = SMA(data.Close, 5).rename('ma5')
+        self._ma10 = SMA(data.Close, 10).rename('ma10')
+        self._data = pd.concat([data, self._ma5, self._ma10], axis = 1)
+
+        self._InitMoney  = cash
         self._TotalMoney = cash
         self._Commission = commission
-        self._ROI = 0
-        self._LocalROI = 0
-        self._Bars = []
-        self._Hold = None
-        self._Profit = 0
+        self._ROI        = 0
+        self._LocalROI   = 0
+        self._Bars       = []
+        self._Hold       = None
+        self._Profit     = 0
         self._TradingHistory = pd.DataFrame()
     
-    def stats(self) -> pd.DataFrame:
+    def GetTradingHistory(self) -> pd.DataFrame:
         return self._TradingHistory.T
+
+    @abstractmethod
+    def GetTechIndicator(self):
+        return NotImplemented
 
     @abstractmethod
     def GetName(self):

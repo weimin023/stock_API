@@ -11,29 +11,52 @@ class Backtest:
                  cash: float = 10_000,
                  commission: float = .0):
 
-        self.__stock = stock
-        self.__stats = pd.DataFrame
-        self.__data: pd.DataFrame = self.__stock.Fetch()
-        self.__strategy = strategy(cash, commission)
+        self._stock = stock
+        self._data: pd.DataFrame = self._stock.Fetch()
+        self._strategy = strategy(self._data, cash, commission)
 
-        self.__ma5  = SMA(self.__data.Close, 5).rename('ma5')
-        self.__ma10 = SMA(self.__data.Close, 10).rename('ma10')
-        self.__data = pd.concat([self.__data, self.__ma5, self.__ma10], axis = 1)
-    
     def run(self) -> pd.DataFrame:
-        data = self.__data.copy(deep = False)
-        strategy = self.__strategy
-
-        for idx, row in data.iterrows():
-            strategy.next(row)
-
-        if (strategy.GetName()=="TangledMA"):
-            strategy.next2(self.__data)
+        strategy = self._strategy
+        strategy.next()
         
-        self.__stats = strategy.stats()
-        return self.__stats
+        self._stats = strategy.GetTradingHistory()
+        return self._stats
 
     def plot(self):
-        # add indicators
-        return self.__stock.Plot(self.__stats)
+        plot = Plotter(self._data, self._stock.GetName())
+
+        # plot return figure
+        fig = plot.GetFig()
+
+        # add indicators to figure by strategies
+        StrategyName = self._strategy.GetName()
+        if StrategyName == "TangledMA":
+            TECHINDI = self._strategy.GetTechIndicator()
+            BLUE_X = []
+            BLUE_Y = []
+            RED_X  = []
+            RED_Y  = []
+            for k, v in TECHINDI.items():
+                RED_X.append(k)
+                RED_Y.append(self._data.loc[k].High)
+                for i in range(0, 3):
+                    BLUE_X.append(v[0][i][0])
+                    BLUE_Y.append(self._data.loc[v[0][i][0]].High)
+            
+            fig.scatter(BLUE_X, BLUE_Y, size = 20, marker = "inverted_triangle", fill_color="dodgerblue")
+            fig.scatter(RED_X, RED_Y,   size = 20, marker = "square_pin", fill_color="magenta")
+        '''if (=="TangledMA"):
+            triggeredTradeList = self._data.loc[indicator['Date']]
+            cnt = 0
+            for idx, row in triggeredTradeList.iterrows():
+                if cnt%2 == 0:
+                    self.BuyIndicator(candlestick, idx, row['High'])
+                else:
+                    self.SellIndicator(candlestick, idx, row['Low'])
+                cnt += 1
+            
+            for idx, row in triggeredTradeList.iterrows():
+                self.BuyIndicator(fig, idx, row['High'])'''
+
+        return plot.GetPlot()
         
